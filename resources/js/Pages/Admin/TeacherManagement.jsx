@@ -440,85 +440,119 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
 
                     {/* Create Teacher Modal */}
                     <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Add New Teacher</DialogTitle>
-                                <DialogDescription>
-                                    Create a new teacher account with initial position
-                                </DialogDescription>
+                        <DialogContent className="max-w-lg">
+                            <DialogHeader className="pb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                                        <Plus className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div>
+                                        <DialogTitle className="text-lg font-bold">Add New Teacher</DialogTitle>
+                                        <DialogDescription className="text-xs text-gray-600">
+                                            Create a new teacher account
+                                        </DialogDescription>
+                                    </div>
+                                </div>
                             </DialogHeader>
                             <form onSubmit={handleCreate}>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="name">Name</Label>
-                                        <Input
-                                            id="name"
-                                            value={createForm.data.name}
-                                            onChange={(e) => createForm.setData('name', e.target.value)}
-                                            required
-                                        />
+                                <div className="py-3 space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label htmlFor="create_name" className="text-xs">Name *</Label>
+                                            <Input
+                                                id="create_name"
+                                                placeholder="Full name"
+                                                value={createForm.data.name}
+                                                onChange={(e) => createForm.setData('name', e.target.value)}
+                                                required
+                                                autoFocus
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor="create_email" className="text-xs">Email *</Label>
+                                            <Input
+                                                id="create_email"
+                                                type="email"
+                                                placeholder="email@example.com"
+                                                value={createForm.data.email}
+                                                onChange={(e) => createForm.setData('email', e.target.value)}
+                                                required
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="email">Email</Label>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="create_password" className="text-xs">Password *</Label>
                                         <Input
-                                            id="email"
-                                            type="email"
-                                            value={createForm.data.email}
-                                            onChange={(e) => createForm.setData('email', e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="password">Password</Label>
-                                        <Input
-                                            id="password"
+                                            id="create_password"
                                             type="password"
+                                            placeholder="Min 8 characters"
                                             value={createForm.data.password}
                                             onChange={(e) => createForm.setData('password', e.target.value)}
                                             required
+                                            minLength={8}
+                                            className="h-9 text-sm"
                                         />
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="position">Initial Position</Label>
-                                        <Select
-                                            value={createForm.data.current_position_id}
-                                            onValueChange={(value) => createForm.setData('current_position_id', value)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select position" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {positions.map((position) => (
-                                                    <SelectItem key={position.id} value={position.id.toString()}>
-                                                        {position.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label htmlFor="create_position" className="text-xs">Position *</Label>
+                                            <Select
+                                                value={createForm.data.current_position_id}
+                                                onValueChange={(value) => createForm.setData('current_position_id', value)}
+                                            >
+                                                <SelectTrigger className="h-9 text-sm">
+                                                    <SelectValue placeholder="Select" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {positions.map((position) => (
+                                                        <SelectItem key={position.id} value={position.id.toString()}>
+                                                            {position.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor="create_type" className="text-xs">Type</Label>
+                                            <Input
+                                                id="create_type"
+                                                placeholder="Full-time"
+                                                value={createForm.data.teacher_type}
+                                                onChange={(e) => createForm.setData('teacher_type', e.target.value)}
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="division">Division</Label>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="create_division" className="text-xs">Division</Label>
                                         <Input
-                                            id="division"
+                                            id="create_division"
+                                            placeholder="Department"
                                             value={createForm.data.division}
                                             onChange={(e) => createForm.setData('division', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="teacher_type">Teacher Type</Label>
-                                        <Input
-                                            id="teacher_type"
-                                            value={createForm.data.teacher_type}
-                                            onChange={(e) => createForm.setData('teacher_type', e.target.value)}
+                                            className="h-9 text-sm"
                                         />
                                     </div>
                                 </div>
-                                <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                                
+                                <DialogFooter className="pt-3">
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        onClick={() => setIsCreateModalOpen(false)}
+                                        size="sm"
+                                    >
                                         Cancel
                                     </Button>
-                                    <Button type="submit" disabled={createForm.processing} className="bg-green-600 hover:bg-green-700">
-                                        Create Teacher
+                                    <Button 
+                                        type="submit" 
+                                        disabled={createForm.processing} 
+                                        className="bg-green-600 hover:bg-green-700"
+                                        size="sm"
+                                    >
+                                        Create
                                     </Button>
                                 </DialogFooter>
                             </form>
@@ -527,57 +561,63 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
 
                     {/* Edit Teacher Modal */}
                     <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Edit Teacher</DialogTitle>
-                                <DialogDescription>
-                                    Update teacher information
-                                </DialogDescription>
+                        <DialogContent className="max-w-md">
+                            <DialogHeader className="pb-2">
+                                <DialogTitle className="text-lg">Edit Teacher</DialogTitle>
+                                <DialogDescription className="text-xs">Update teacher information</DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handleEdit}>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="edit_name">Name</Label>
-                                        <Input
-                                            id="edit_name"
-                                            value={editForm.data.name}
-                                            onChange={(e) => editForm.setData('name', e.target.value)}
-                                            required
-                                        />
+                                <div className="space-y-3 py-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label htmlFor="edit_name" className="text-xs">Name *</Label>
+                                            <Input
+                                                id="edit_name"
+                                                value={editForm.data.name}
+                                                onChange={(e) => editForm.setData('name', e.target.value)}
+                                                required
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor="edit_email" className="text-xs">Email *</Label>
+                                            <Input
+                                                id="edit_email"
+                                                type="email"
+                                                value={editForm.data.email}
+                                                onChange={(e) => editForm.setData('email', e.target.value)}
+                                                required
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="edit_email">Email</Label>
-                                        <Input
-                                            id="edit_email"
-                                            type="email"
-                                            value={editForm.data.email}
-                                            onChange={(e) => editForm.setData('email', e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="edit_division">Division</Label>
-                                        <Input
-                                            id="edit_division"
-                                            value={editForm.data.division}
-                                            onChange={(e) => editForm.setData('division', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="edit_teacher_type">Teacher Type</Label>
-                                        <Input
-                                            id="edit_teacher_type"
-                                            value={editForm.data.teacher_type}
-                                            onChange={(e) => editForm.setData('teacher_type', e.target.value)}
-                                        />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label htmlFor="edit_division" className="text-xs">Division</Label>
+                                            <Input
+                                                id="edit_division"
+                                                value={editForm.data.division}
+                                                onChange={(e) => editForm.setData('division', e.target.value)}
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor="edit_teacher_type" className="text-xs">Type</Label>
+                                            <Input
+                                                id="edit_teacher_type"
+                                                value={editForm.data.teacher_type}
+                                                onChange={(e) => editForm.setData('teacher_type', e.target.value)}
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                                <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                                <DialogFooter className="pt-3">
+                                    <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)} size="sm">
                                         Cancel
                                     </Button>
-                                    <Button type="submit" disabled={editForm.processing} className="bg-green-600 hover:bg-green-700">
-                                        Update Teacher
+                                    <Button type="submit" disabled={editForm.processing} className="bg-green-600 hover:bg-green-700" size="sm">
+                                        Update
                                     </Button>
                                 </DialogFooter>
                             </form>
@@ -586,18 +626,18 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
 
                     {/* Delete Confirmation Modal */}
                     <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Delete Teacher</DialogTitle>
-                                <DialogDescription>
-                                    Are you sure you want to delete {selectedTeacher?.name}? This action cannot be undone.
+                        <DialogContent className="max-w-sm">
+                            <DialogHeader className="pb-2">
+                                <DialogTitle className="text-lg">Delete Teacher</DialogTitle>
+                                <DialogDescription className="text-xs">
+                                    Delete {selectedTeacher?.name}? This cannot be undone.
                                 </DialogDescription>
                             </DialogHeader>
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
+                            <DialogFooter className="pt-3">
+                                <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} size="sm">
                                     Cancel
                                 </Button>
-                                <Button variant="destructive" onClick={handleDelete}>
+                                <Button variant="destructive" onClick={handleDelete} size="sm">
                                     Delete
                                 </Button>
                             </DialogFooter>
@@ -606,31 +646,31 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
 
                     {/* Promote Teacher Modal */}
                     <Dialog open={isPromoteModalOpen} onOpenChange={setIsPromoteModalOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Promote Teacher</DialogTitle>
-                                <DialogDescription>
-                                    Select the new position for {selectedTeacher?.name}
+                        <DialogContent className="max-w-md">
+                            <DialogHeader className="pb-2">
+                                <DialogTitle className="text-lg">Promote Teacher</DialogTitle>
+                                <DialogDescription className="text-xs">
+                                    Select new position for {selectedTeacher?.name}
                                 </DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handlePromote}>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid gap-2">
-                                        <Label>Current Position</Label>
+                                <div className="space-y-3 py-3">
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Current Position</Label>
                                         <Input
                                             value={selectedTeacher?.current_position?.name || 'No Position'}
                                             disabled
-                                            className="bg-gray-50"
+                                            className="bg-gray-50 h-9 text-sm"
                                         />
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="to_position">Promote To</Label>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="to_position" className="text-xs">Promote To *</Label>
                                         <Select
                                             value={promoteForm.data.to_position_id}
                                             onValueChange={(value) => promoteForm.setData('to_position_id', value)}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select new position" />
+                                            <SelectTrigger className="h-9 text-sm">
+                                                <SelectValue placeholder="Select position" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {positions.map((position) => (
@@ -646,22 +686,23 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="notes">Notes (Optional)</Label>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="notes" className="text-xs">Notes</Label>
                                         <Input
                                             id="notes"
-                                            placeholder="Add any notes about this promotion..."
+                                            placeholder="Optional notes..."
                                             value={promoteForm.data.notes}
                                             onChange={(e) => promoteForm.setData('notes', e.target.value)}
+                                            className="h-9 text-sm"
                                         />
                                     </div>
                                 </div>
-                                <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsPromoteModalOpen(false)}>
+                                <DialogFooter className="pt-3">
+                                    <Button type="button" variant="outline" onClick={() => setIsPromoteModalOpen(false)} size="sm">
                                         Cancel
                                     </Button>
-                                    <Button type="submit" disabled={promoteForm.processing || !promoteForm.data.to_position_id} className="bg-green-600 hover:bg-green-700">
-                                        Confirm Promotion
+                                    <Button type="submit" disabled={promoteForm.processing || !promoteForm.data.to_position_id} className="bg-green-600 hover:bg-green-700" size="sm">
+                                        Promote
                                     </Button>
                                 </DialogFooter>
                             </form>
