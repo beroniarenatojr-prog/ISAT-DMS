@@ -84,6 +84,26 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
         return colors[status] || colors.draft;
     };
 
+    // Get rating equivalency
+    const getRatingEquivalency = (rating) => {
+        const numRating = Number(rating);
+        if (numRating >= 4.5) return 'Outstanding';
+        if (numRating >= 3.5) return 'Very Satisfactory';
+        if (numRating >= 2.5) return 'Satisfactory';
+        if (numRating >= 1.5) return 'Unsatisfactory';
+        return 'Poor';
+    };
+
+    // Get rating color
+    const getRatingColor = (rating) => {
+        const numRating = Number(rating);
+        if (numRating >= 4.5) return 'text-purple-600 bg-purple-50';
+        if (numRating >= 3.5) return 'text-green-600 bg-green-50';
+        if (numRating >= 2.5) return 'text-blue-600 bg-blue-50';
+        if (numRating >= 1.5) return 'text-orange-600 bg-orange-50';
+        return 'text-red-600 bg-red-50';
+    };
+
     // Toggle row expansion
     const toggleRowExpansion = (teacherId) => {
         setExpandedRows(prev => 
@@ -504,6 +524,7 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
                                                 <TableHead>Teacher Name</TableHead>
                                                 <TableHead>Position</TableHead>
                                                 <TableHead className="text-center">Rating</TableHead>
+                                                <TableHead className="text-center">Equivalency</TableHead>
                                                 <TableHead className="text-center">Year</TableHead>
                                                 <TableHead className="text-center">Status</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
@@ -512,7 +533,7 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
                                         <TableBody>
                                             {teachers.data.length === 0 ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                                                    <TableCell colSpan={8} className="text-center text-muted-foreground">
                                                         No teachers found
                                                     </TableCell>
                                                 </TableRow>
@@ -556,6 +577,15 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell className="text-center">
+                                                                    {latestRating?.numerical_rating ? (
+                                                                        <span className={`inline-flex px-3 py-1 text-xs font-bold rounded ${getRatingColor(latestRating.numerical_rating)}`}>
+                                                                            {getRatingEquivalency(latestRating.numerical_rating)}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-gray-400 text-sm">-</span>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-center">
                                                                     {latestRating?.rating_period || '-'}
                                                                 </TableCell>
                                                                 <TableCell className="text-center">
@@ -594,7 +624,7 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
                                                             {/* Expanded Row - Show all ratings */}
                                                             {isExpanded && teacher.ipcrf_ratings?.length > 0 && (
                                                                 <TableRow>
-                                                                    <TableCell colSpan={7} className="bg-gray-50">
+                                                                    <TableCell colSpan={8} className="bg-gray-50">
                                                                         <div className="p-4">
                                                                             <h4 className="font-semibold mb-3">Rating History</h4>
                                                                             <div className="space-y-2">
@@ -665,10 +695,13 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
                     {selectedRating && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-3 gap-4">
-                                <div className="bg-blue-50 p-4 rounded-lg">
-                                    <p className="text-sm text-gray-600">Numerical Rating</p>
-                                    <p className="text-2xl font-bold text-blue-600">
-                                        {selectedRating.numerical_rating ? Number(selectedRating.numerical_rating).toFixed(2) : 'N/A'}
+                                <div className={`p-4 rounded-lg ${getRatingColor(selectedRating.numerical_rating)}`}>
+                                    <p className="text-sm font-medium opacity-80">Rating Equivalency</p>
+                                    <p className="text-2xl font-bold mt-1">
+                                        {selectedRating.numerical_rating ? getRatingEquivalency(selectedRating.numerical_rating) : 'N/A'}
+                                    </p>
+                                    <p className="text-sm font-medium mt-1 opacity-70">
+                                        ({selectedRating.numerical_rating ? Number(selectedRating.numerical_rating).toFixed(2) : 'N/A'})
                                     </p>
                                 </div>
                                 <div className="bg-green-50 p-4 rounded-lg">
@@ -697,17 +730,30 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
                                                     <p className="text-sm text-gray-600">{obj.objective_description}</p>
                                                 </div>
                                                 <div className="flex items-center gap-4">
-                                                    <span className="text-sm">Rating: <span className="font-semibold">{obj.rating}</span></span>
-                                                    <span className="text-sm">Score: <span className="font-semibold">{obj.score ? Number(obj.score).toFixed(2) : 'N/A'}</span></span>
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-gray-500">Rating</p>
+                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded ${getRatingColor(obj.rating)}`}>
+                                                            {obj.rating ? getRatingEquivalency(obj.rating) : 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-gray-500">Score</p>
+                                                        <span className="font-semibold text-sm">{obj.score ? Number(obj.score).toFixed(2) : 'N/A'}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                     <div className="mt-3 pt-3 border-t flex justify-between items-center">
                                         <span className="font-semibold">KRA Average:</span>
-                                        <span className="text-lg font-bold text-blue-600">
-                                            {kra.average_rating ? Number(kra.average_rating).toFixed(2) : 'N/A'}
-                                        </span>
+                                        <div className="text-right">
+                                            <span className={`inline-flex px-3 py-1 text-sm font-bold rounded ${getRatingColor(kra.average_rating)}`}>
+                                                {kra.average_rating ? getRatingEquivalency(kra.average_rating) : 'N/A'}
+                                            </span>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                ({kra.average_rating ? Number(kra.average_rating).toFixed(2) : 'N/A'})
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             ))}

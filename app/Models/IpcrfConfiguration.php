@@ -10,6 +10,8 @@ class IpcrfConfiguration extends Model
         'school_year',
         'kra_count',
         'objectives_per_kra',
+        'submission_start_date',
+        'submission_end_date',
         'is_active',
         'is_locked',
         'notes',
@@ -17,6 +19,8 @@ class IpcrfConfiguration extends Model
 
     protected $casts = [
         'objectives_per_kra' => 'array',
+        'submission_start_date' => 'date',
+        'submission_end_date' => 'date',
         'is_active' => 'boolean',
         'is_locked' => 'boolean',
     ];

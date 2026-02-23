@@ -78,6 +78,8 @@ export default function IpcrfConfiguration({ configurations, currentYear, flash 
             school_year: '',
             kra_count: 4,
             objectives_per_kra: [3, 3, 3, 3],
+            submission_start_date: '',
+            submission_end_date: '',
             notes: '',
         });
     };
@@ -129,6 +131,8 @@ export default function IpcrfConfiguration({ configurations, currentYear, flash 
             school_year: config.school_year,
             kra_count: config.kra_count,
             objectives_per_kra: config.objectives_per_kra,
+            submission_start_date: config.submission_start_date || '',
+            submission_end_date: config.submission_end_date || '',
             notes: config.notes || '',
         });
         setIsEditModalOpen(true);
@@ -314,6 +318,11 @@ export default function IpcrfConfiguration({ configurations, currentYear, flash 
                                                         <TableRow key={config.id}>
                                                             <TableCell className="font-medium">
                                                                 {config.school_year}
+                                                                {config.submission_start_date && config.submission_end_date && (
+                                                                    <p className="text-xs text-gray-500 mt-1">
+                                                                        Submission: {new Date(config.submission_start_date).toLocaleDateString()} - {new Date(config.submission_end_date).toLocaleDateString()}
+                                                                    </p>
+                                                                )}
                                                                 {config.notes && (
                                                                     <p className="text-xs text-gray-500 mt-1">{config.notes}</p>
                                                                 )}
@@ -439,6 +448,29 @@ export default function IpcrfConfiguration({ configurations, currentYear, flash 
                             />
                         </div>
 
+                        {/* Submission Dates */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="submission_start_date">Submission Start Date</Label>
+                                <Input
+                                    id="submission_start_date"
+                                    type="date"
+                                    value={formData.submission_start_date}
+                                    onChange={(e) => setFormData({ ...formData, submission_start_date: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="submission_end_date">Submission End Date</Label>
+                                <Input
+                                    id="submission_end_date"
+                                    type="date"
+                                    value={formData.submission_end_date}
+                                    onChange={(e) => setFormData({ ...formData, submission_end_date: e.target.value })}
+                                    min={formData.submission_start_date}
+                                />
+                            </div>
+                        </div>
+
                         {/* Objectives per KRA */}
                         <div className="space-y-2">
                             <Label>Objectives per KRA</Label>
@@ -528,6 +560,29 @@ export default function IpcrfConfiguration({ configurations, currentYear, flash 
                                 value={formData.kra_count}
                                 onChange={(e) => handleKraCountChange(e.target.value)}
                             />
+                        </div>
+
+                        {/* Submission Dates */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit_submission_start_date">Submission Start Date</Label>
+                                <Input
+                                    id="edit_submission_start_date"
+                                    type="date"
+                                    value={formData.submission_start_date}
+                                    onChange={(e) => setFormData({ ...formData, submission_start_date: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit_submission_end_date">Submission End Date</Label>
+                                <Input
+                                    id="edit_submission_end_date"
+                                    type="date"
+                                    value={formData.submission_end_date}
+                                    onChange={(e) => setFormData({ ...formData, submission_end_date: e.target.value })}
+                                    min={formData.submission_start_date}
+                                />
+                            </div>
                         </div>
 
                         {/* Objectives per KRA */}

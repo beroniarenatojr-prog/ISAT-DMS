@@ -97,7 +97,7 @@ export default function AdminDashboard({
                 doc.text('ISABELA SCHOOL OF ARTS AND TRADES', pageWidth / 2, 17, { align: 'center' });
                 doc.setFontSize(11);
                 doc.setFont('helvetica', 'normal');
-                doc.text('Document Management System - Dashboard Report', pageWidth / 2, 25, { align: 'center' });
+                doc.text('e-TRACES - Dashboard Report', pageWidth / 2, 25, { align: 'center' });
                 
                 // Reset text color
                 doc.setTextColor(0, 0, 0);
@@ -110,7 +110,7 @@ export default function AdminDashboard({
                 const footerY = pageHeight - 10;
                 doc.text(`Generated: ${new Date().toLocaleString()}`, 14, footerY);
                 doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth / 2, footerY, { align: 'center' });
-                doc.text('ISAT DMS - Confidential', pageWidth - 14, footerY, { align: 'right' });
+                doc.text('ISAT e-TRACES - Confidential', pageWidth - 14, footerY, { align: 'right' });
                 doc.setTextColor(0, 0, 0);
             };
 
@@ -462,7 +462,7 @@ export default function AdminDashboard({
             }
 
             // Save PDF
-            const fileName = `ISAT_DMS_Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+            const fileName = `ISAT_e-TRACES_Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
         } catch (error) {
             console.error('Error exporting dashboard report:', error);

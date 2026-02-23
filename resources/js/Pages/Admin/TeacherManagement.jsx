@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/components/app-sidebar"
+﻿import { AppSidebar } from "@/components/app-sidebar"
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Search, Plus, Edit, Trash2, TrendingUp, History, MoreVertical, Calendar, Award, CheckCircle2, User, Briefcase } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, TrendingUp, History, MoreVertical, Calendar, Award, CheckCircle2, User, Briefcase, Mail, Phone, MapPin, Building, IdCard } from 'lucide-react';
 import { Toaster } from "@/components/ui/sonner"
 
 export default function TeacherManagement({ teachers, positions, filters, flash }) {
@@ -51,6 +51,7 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [selectedTeacher, setSelectedTeacher] = useState(null);
     const [openMenuRow, setOpenMenuRow] = useState(null);
     const [promotionHistory, setPromotionHistory] = useState([]);
@@ -88,22 +89,24 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
         name: '',
         email: '',
         password: '',
+        career_stage: '',
         current_position_id: '',
-        division: '',
-        teacher_type: '',
+        department: '',
+        teacher_status: '',
     });
 
     // Form for editing teacher
     const editForm = useForm({
         name: '',
         email: '',
-        division: '',
-        teacher_type: '',
+        department: '',
+        teacher_status: '',
     });
 
     // Form for promotion
     const promoteForm = useForm({
         to_position_id: '',
+        career_stage: '',
         notes: '',
     });
 
@@ -195,8 +198,8 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
         editForm.setData({
             name: teacher.name,
             email: teacher.email,
-            division: teacher.division || '',
-            teacher_type: teacher.teacher_type || '',
+            department: teacher.department || '',
+            teacher_status: teacher.teacher_type || '',
         });
         setIsEditModalOpen(true);
     };
@@ -212,6 +215,7 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
         setSelectedTeacher(teacher);
         promoteForm.setData({
             to_position_id: '',
+            career_stage: '',
             notes: '',
         });
         setIsPromoteModalOpen(true);
@@ -230,6 +234,12 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
             .catch(() => {
                 toast.error('Failed to load promotion history.');
             });
+    };
+
+    // Open profile modal
+    const openProfileModal = (teacher) => {
+        setSelectedTeacher(teacher);
+        setIsProfileModalOpen(true);
     };
 
     // Get next position name
@@ -340,7 +350,8 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                         <TableHead>Name</TableHead>
                                         <TableHead>Email</TableHead>
                                         <TableHead>Position</TableHead>
-                                        <TableHead>Division</TableHead>
+                                        <TableHead>Career Stage</TableHead>
+                                        <TableHead>Department</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -348,7 +359,7 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                 <TableBody>
                                     {teachers.data.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center text-muted-foreground">
+                                            <TableCell colSpan={7} className="text-center text-muted-foreground">
                                                 No teachers found
                                             </TableCell>
                                         </TableRow>
@@ -359,11 +370,20 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                                 <TableCell>{teacher.email}</TableCell>
                                                 <TableCell>
                                                     <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700">
-                                                        {teacher.current_position?.name || 'No Position'}
+                                                        {teacher.position_range || 'No Position'}
                                                     </span>
                                                 </TableCell>
-                                                <TableCell>{teacher.division || '-'}</TableCell>
-                                                <TableCell>{teacher.teacher_type || '-'}</TableCell>
+                                                <TableCell>
+                                                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-50 text-green-700">
+                                                        {teacher.career_stage || '-'}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>{teacher.department || '-'}</TableCell>
+                                                <TableCell>
+                                                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-purple-50 text-purple-700">
+                                                        {teacher.teacher_type || '-'}
+                                                    </span>
+                                                </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="relative inline-block" ref={openMenuRow === teacher.id ? menuRef : null}>
                                                         <Button
@@ -378,6 +398,17 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                                         {/* Dropdown menu that appears on click */}
                                                         {openMenuRow === teacher.id && (
                                                             <div className="absolute right-0 top-0 flex flex-row gap-1 bg-white border rounded-md shadow-lg p-1 z-10">
+                                                                <Button
+                                                                    size="sm"
+                                                                    className="bg-purple-600 hover:bg-purple-700 w-8 h-8 p-0"
+                                                                    onClick={() => {
+                                                                        openProfileModal(teacher);
+                                                                        setOpenMenuRow(null);
+                                                                    }}
+                                                                    title="View Profile"
+                                                                >
+                                                                    <IdCard className="h-3 w-3" />
+                                                                </Button>
                                                                 <Button
                                                                     size="sm"
                                                                     className="bg-green-600 hover:bg-green-700 w-8 h-8 p-0"
@@ -478,7 +509,13 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                                 id="create_name"
                                                 placeholder="Full name"
                                                 value={createForm.data.name}
-                                                onChange={(e) => createForm.setData('name', e.target.value)}
+                                                onChange={(e) => {
+                                                    // Capitalize first letter of each word
+                                                    const capitalized = e.target.value.split(' ').map(word => 
+                                                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                                                    ).join(' ');
+                                                    createForm.setData('name', capitalized);
+                                                }}
                                                 required
                                                 autoFocus
                                                 className={`h-9 text-sm ${createForm.errors.name ? 'border-red-500' : ''}`}
@@ -527,17 +564,34 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                             <Label htmlFor="create_position" className="text-xs">Position *</Label>
                                             <Select
                                                 value={createForm.data.current_position_id}
-                                                onValueChange={(value) => createForm.setData('current_position_id', value)}
+                                                onValueChange={(value) => {
+                                                    // Auto-set career stage based on position
+                                                    let careerStage = '';
+                                                    if (value === 'T1 - T3') {
+                                                        careerStage = 'Beginner';
+                                                    } else if (value === 'T4 - T7') {
+                                                        careerStage = 'Proficient';
+                                                    } else if (value === 'MT1 - MT2') {
+                                                        careerStage = 'Highly Proficient';
+                                                    } else if (value === 'MT3 - MT5') {
+                                                        careerStage = 'Distinguished';
+                                                    }
+                                                    // Set both values at once
+                                                    createForm.setData({
+                                                        ...createForm.data,
+                                                        current_position_id: value,
+                                                        career_stage: careerStage
+                                                    });
+                                                }}
                                             >
                                                 <SelectTrigger className={`h-9 text-sm ${createForm.errors.current_position_id ? 'border-red-500' : ''}`}>
-                                                    <SelectValue placeholder="Select" />
+                                                    <SelectValue placeholder="Select position" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {positions.map((position) => (
-                                                        <SelectItem key={position.id} value={position.id.toString()}>
-                                                            {position.name}
-                                                        </SelectItem>
-                                                    ))}
+                                                    <SelectItem value="T1 - T3">T1 - T3</SelectItem>
+                                                    <SelectItem value="T4 - T7">T4 - T7</SelectItem>
+                                                    <SelectItem value="MT1 - MT2">MT1 - MT2</SelectItem>
+                                                    <SelectItem value="MT3 - MT5">MT3 - MT5</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             {createForm.errors.current_position_id && (
@@ -545,31 +599,55 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                             )}
                                         </div>
                                         <div className="space-y-1">
-                                            <Label htmlFor="create_type" className="text-xs">Type</Label>
+                                            <Label htmlFor="create_career_stage" className="text-xs">Career Stage</Label>
                                             <Input
-                                                id="create_type"
-                                                placeholder="Full-time"
-                                                value={createForm.data.teacher_type}
-                                                onChange={(e) => createForm.setData('teacher_type', e.target.value)}
-                                                className={`h-9 text-sm ${createForm.errors.teacher_type ? 'border-red-500' : ''}`}
+                                                id="create_career_stage"
+                                                value={createForm.data.career_stage}
+                                                readOnly
+                                                placeholder="Auto-filled"
+                                                className="h-9 text-sm bg-gray-50"
                                             />
-                                            {createForm.errors.teacher_type && (
-                                                <p className="text-xs text-red-600 mt-1">{createForm.errors.teacher_type}</p>
-                                            )}
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label htmlFor="create_division" className="text-xs">Division</Label>
-                                        <Input
-                                            id="create_division"
-                                            placeholder="Department"
-                                            value={createForm.data.division}
-                                            onChange={(e) => createForm.setData('division', e.target.value)}
-                                            className={`h-9 text-sm ${createForm.errors.division ? 'border-red-500' : ''}`}
-                                        />
-                                        {createForm.errors.division && (
-                                            <p className="text-xs text-red-600 mt-1">{createForm.errors.division}</p>
-                                        )}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label htmlFor="create_status" className="text-xs">Status</Label>
+                                            <Select
+                                                value={createForm.data.teacher_status}
+                                                onValueChange={(value) => createForm.setData('teacher_status', value)}
+                                            >
+                                                <SelectTrigger className={`h-9 text-sm ${createForm.errors.teacher_status ? 'border-red-500' : ''}`}>
+                                                    <SelectValue placeholder="Select status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Permanent">Permanent</SelectItem>
+                                                    <SelectItem value="Provisioning">Provisioning</SelectItem>
+                                                    <SelectItem value="Volunteer/COS">Volunteer/COS</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {createForm.errors.teacher_status && (
+                                                <p className="text-xs text-red-600 mt-1">{createForm.errors.teacher_status}</p>
+                                            )}
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor="create_department" className="text-xs">Department</Label>
+                                            <Select
+                                                value={createForm.data.department}
+                                                onValueChange={(value) => createForm.setData('department', value)}
+                                            >
+                                                <SelectTrigger className={`h-9 text-sm ${createForm.errors.department ? 'border-red-500' : ''}`}>
+                                                    <SelectValue placeholder="Select department" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Acad">Acad</SelectItem>
+                                                    <SelectItem value="Tech">Tech</SelectItem>
+                                                    <SelectItem value="Pro">Pro</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {createForm.errors.department && (
+                                                <p className="text-xs text-red-600 mt-1">{createForm.errors.department}</p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -610,7 +688,13 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                             <Input
                                                 id="edit_name"
                                                 value={editForm.data.name}
-                                                onChange={(e) => editForm.setData('name', e.target.value)}
+                                                onChange={(e) => {
+                                                    // Capitalize first letter of each word
+                                                    const capitalized = e.target.value.split(' ').map(word => 
+                                                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                                                    ).join(' ');
+                                                    editForm.setData('name', capitalized);
+                                                }}
                                                 required
                                                 className={`h-9 text-sm ${editForm.errors.name ? 'border-red-500' : ''}`}
                                             />
@@ -635,27 +719,41 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1">
-                                            <Label htmlFor="edit_division" className="text-xs">Division</Label>
-                                            <Input
-                                                id="edit_division"
-                                                value={editForm.data.division}
-                                                onChange={(e) => editForm.setData('division', e.target.value)}
-                                                className={`h-9 text-sm ${editForm.errors.division ? 'border-red-500' : ''}`}
-                                            />
-                                            {editForm.errors.division && (
-                                                <p className="text-xs text-red-600 mt-1">{editForm.errors.division}</p>
+                                            <Label htmlFor="edit_department" className="text-xs">Department</Label>
+                                            <Select
+                                                value={editForm.data.department}
+                                                onValueChange={(value) => editForm.setData('department', value)}
+                                            >
+                                                <SelectTrigger className={`h-9 text-sm ${editForm.errors.department ? 'border-red-500' : ''}`}>
+                                                    <SelectValue placeholder="Select department" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Acad">Acad</SelectItem>
+                                                    <SelectItem value="Tech">Tech</SelectItem>
+                                                    <SelectItem value="Pro">Pro</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {editForm.errors.department && (
+                                                <p className="text-xs text-red-600 mt-1">{editForm.errors.department}</p>
                                             )}
                                         </div>
                                         <div className="space-y-1">
-                                            <Label htmlFor="edit_teacher_type" className="text-xs">Type</Label>
-                                            <Input
-                                                id="edit_teacher_type"
-                                                value={editForm.data.teacher_type}
-                                                onChange={(e) => editForm.setData('teacher_type', e.target.value)}
-                                                className={`h-9 text-sm ${editForm.errors.teacher_type ? 'border-red-500' : ''}`}
-                                            />
-                                            {editForm.errors.teacher_type && (
-                                                <p className="text-xs text-red-600 mt-1">{editForm.errors.teacher_type}</p>
+                                            <Label htmlFor="edit_teacher_status" className="text-xs">Status</Label>
+                                            <Select
+                                                value={editForm.data.teacher_status}
+                                                onValueChange={(value) => editForm.setData('teacher_status', value)}
+                                            >
+                                                <SelectTrigger className={`h-9 text-sm ${editForm.errors.teacher_status ? 'border-red-500' : ''}`}>
+                                                    <SelectValue placeholder="Select status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Permanent">Permanent</SelectItem>
+                                                    <SelectItem value="Provisioning">Provisioning</SelectItem>
+                                                    <SelectItem value="Volunteer/COS">Volunteer/COS</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {editForm.errors.teacher_status && (
+                                                <p className="text-xs text-red-600 mt-1">{editForm.errors.teacher_status}</p>
                                             )}
                                         </div>
                                     </div>
@@ -706,7 +804,15 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                     <div className="space-y-1">
                                         <Label className="text-xs">Current Position</Label>
                                         <Input
-                                            value={selectedTeacher?.current_position?.name || 'No Position'}
+                                            value={selectedTeacher?.position_range || 'No Position'}
+                                            disabled
+                                            className="bg-gray-50 h-9 text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Current Career Stage</Label>
+                                        <Input
+                                            value={selectedTeacher?.career_stage || '-'}
                                             disabled
                                             className="bg-gray-50 h-9 text-sm"
                                         />
@@ -715,27 +821,47 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                         <Label htmlFor="to_position" className="text-xs">Promote To *</Label>
                                         <Select
                                             value={promoteForm.data.to_position_id}
-                                            onValueChange={(value) => promoteForm.setData('to_position_id', value)}
+                                            onValueChange={(value) => {
+                                                // Auto-set career stage based on position
+                                                let careerStage = '';
+                                                if (value === 'T1 - T3') {
+                                                    careerStage = 'Beginner';
+                                                } else if (value === 'T4 - T7') {
+                                                    careerStage = 'Proficient';
+                                                } else if (value === 'MT1 - MT2') {
+                                                    careerStage = 'Highly Proficient';
+                                                } else if (value === 'MT3 - MT5') {
+                                                    careerStage = 'Distinguished';
+                                                }
+                                                promoteForm.setData({
+                                                    ...promoteForm.data,
+                                                    to_position_id: value,
+                                                    career_stage: careerStage
+                                                });
+                                            }}
                                         >
                                             <SelectTrigger className={`h-9 text-sm ${promoteForm.errors.to_position_id ? 'border-red-500' : ''}`}>
                                                 <SelectValue placeholder="Select position" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {positions.map((position) => (
-                                                    <SelectItem 
-                                                        key={position.id} 
-                                                        value={position.id.toString()}
-                                                        disabled={position.id === selectedTeacher?.current_position_id}
-                                                    >
-                                                        {position.name}
-                                                        {position.id === selectedTeacher?.current_position_id && ' (Current)'}
-                                                    </SelectItem>
-                                                ))}
+                                                <SelectItem value="T1 - T3">T1 - T3</SelectItem>
+                                                <SelectItem value="T4 - T7">T4 - T7</SelectItem>
+                                                <SelectItem value="MT1 - MT2">MT1 - MT2</SelectItem>
+                                                <SelectItem value="MT3 - MT5">MT3 - MT5</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         {promoteForm.errors.to_position_id && (
                                             <p className="text-xs text-red-600 mt-1">{promoteForm.errors.to_position_id}</p>
                                         )}
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">New Career Stage</Label>
+                                        <Input
+                                            value={promoteForm.data.career_stage}
+                                            readOnly
+                                            placeholder="Auto-filled"
+                                            className="h-9 text-sm bg-gray-50"
+                                        />
                                     </div>
                                     <div className="space-y-1">
                                         <Label htmlFor="notes" className="text-xs">Notes</Label>
@@ -788,9 +914,9 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                                 <Award className="h-4 w-4 text-green-600" />
                                             </div>
                                             <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Level</p>
+                                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Position</p>
                                                 <p className="text-sm font-bold text-green-600 mt-0.5">
-                                                    {selectedTeacher?.current_position?.name || 'None'}
+                                                    {selectedTeacher?.position_range || 'None'}
                                                 </p>
                                             </div>
                                         </div>
@@ -799,8 +925,8 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                                 <TrendingUp className="h-4 w-4 text-blue-600" />
                                             </div>
                                             <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total</p>
-                                                <p className="text-sm font-bold text-gray-900 mt-0.5">{promotionHistory.length}</p>
+                                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Career Stage</p>
+                                                <p className="text-sm font-bold text-gray-900 mt-0.5">{selectedTeacher?.career_stage || '-'}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-2">
@@ -808,8 +934,8 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                                 <Briefcase className="h-4 w-4 text-purple-600" />
                                             </div>
                                             <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Division</p>
-                                                <p className="text-xs font-semibold text-gray-900 mt-0.5">{selectedTeacher?.division || '-'}</p>
+                                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Department</p>
+                                                <p className="text-xs font-semibold text-gray-900 mt-0.5">{selectedTeacher?.department || '-'}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-2">
@@ -817,7 +943,7 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                                 <User className="h-4 w-4 text-orange-600" />
                                             </div>
                                             <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Type</p>
+                                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Status</p>
                                                 <p className="text-xs font-semibold text-gray-900 mt-0.5">{selectedTeacher?.teacher_type || '-'}</p>
                                             </div>
                                         </div>
@@ -862,11 +988,20 @@ export default function TeacherManagement({ teachers, positions, filters, flash 
                                                                 <div className="flex-1">
                                                                     <div className="flex items-center gap-2 mb-2">
                                                                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200">
-                                                                            {promotion.from_position?.name || 'Unknown'}
+                                                                            {promotion.from_position_range || promotion.from_position?.name || 'Unknown'}
                                                                         </span>
                                                                         <TrendingUp className="h-3 w-3 text-green-600" />
                                                                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-600 text-white border border-green-700">
-                                                                            {promotion.to_position?.name}
+                                                                            {promotion.to_position_range || promotion.to_position?.name}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                                                            {promotion.from_career_stage || '-'}
+                                                                        </span>
+                                                                        <TrendingUp className="h-3 w-3 text-blue-600" />
+                                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white border border-blue-700">
+                                                                            {promotion.to_career_stage || '-'}
                                                                         </span>
                                                                     </div>
                                                                     <p className="text-xs text-gray-600 flex items-center gap-1 mb-1">

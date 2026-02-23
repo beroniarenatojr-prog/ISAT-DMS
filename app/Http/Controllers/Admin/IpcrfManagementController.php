@@ -43,13 +43,17 @@ class IpcrfManagementController extends Controller
                 'teacherSubmissions' => function ($q) {
                     $q->latest()->limit(10);
                 }
-            ]);
+            ])
+            ->withMax('ipcrfRatings as latest_rating_date', 'created_at');
 
         if ($search) {
             $query->where('name', 'like', "%{$search}%");
         }
 
-        $teachers = $query->paginate(10);
+        // Order by latest IPCRF rating submission date (most recent first)
+        $teachers = $query->orderByDesc('latest_rating_date')
+            ->orderBy('name') // Secondary sort by name for teachers without ratings
+            ->paginate(10);
 
         // Get available years from ratings
         $availableYears = IpcrfRating::select('rating_period')

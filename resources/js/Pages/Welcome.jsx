@@ -160,7 +160,7 @@ export default function Welcome({ auth }) {
 
     return (
         <>
-            <Head title="Welcome to ISAT DMS" />
+            <Head title="Welcome to ISAT e-TRACES" />
             
             <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
                 {/* Navigation - Enhanced with glassmorphism and smooth transitions */}
@@ -185,7 +185,7 @@ export default function Welcome({ auth }) {
                                 </div>
                                 <div>
                                     <h1 className="text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-green-600">
-                                        ISAT DMS
+                                        ISAT e-TRACES
                                     </h1>
                                     <p className="text-xs text-gray-600">Document Management System</p>
                                 </div>
@@ -645,7 +645,7 @@ export default function Welcome({ auth }) {
                                         className="h-10 w-10 rounded-lg object-cover"
                                     />
                                     <div>
-                                        <h3 className="text-white font-bold">ISAT DMS</h3>
+                                        <h3 className="text-white font-bold">ISAT e-TRACES</h3>
                                         <p className="text-xs text-gray-400">Document Management System</p>
                                     </div>
                                 </div>
@@ -684,7 +684,7 @@ export default function Welcome({ auth }) {
                         </div>
                         
                         <div className="border-t border-gray-800 pt-8 text-center text-sm">
-                            <p>&copy; {new Date().getFullYear()} ISAT Document Management System. All rights reserved.</p>
+                            <p>&copy; {new Date().getFullYear()} ISAT e-TRACES. All rights reserved.</p>
                         </div>
                     </div>
                 </footer>

@@ -21,7 +21,7 @@ export default function TeacherDashboard({ user }) {
                                 className="h-12 w-12 rounded-lg object-cover"
                             />
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">ISAT DMS</h1>
+                                <h1 className="text-2xl font-bold text-gray-900">ISAT e-TRACES</h1>
                                 <p className="text-sm text-gray-600">Teacher Portal</p>
                             </div>
                         </div>

@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Search, Download, Plus, Edit, Trash2, TrendingUp, Activity, LogIn, FileText } from 'lucide-react';
+import { Search, Download, Plus, Edit, Trash2, TrendingUp, Activity, LogIn, FileText, Printer } from 'lucide-react';
 
 export default function AuditLogs({ logs, actions, filters }) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
@@ -51,14 +51,140 @@ export default function AuditLogs({ logs, actions, filters }) {
         });
     };
 
-    // Handle export
-    const handleExport = () => {
-        window.location.href = route('admin.audit-logs.export', {
-            search: searchTerm,
-            action: selectedAction,
-            date_from: dateFrom,
-            date_to: dateTo,
-        });
+    // Handle export CSV
+    const handleExportCSV = () => {
+        // Create CSV content
+        const headers = ['User', 'Email', 'Action', 'Description', 'Timestamp'];
+        const rows = logs.data.map(log => [
+            log.user?.name || 'Unknown',
+            log.user?.email || 'Unknown',
+            log.action,
+            log.description,
+            new Date(log.created_at).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            })
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+
+        // Create and download file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Handle print
+    const handlePrint = () => {
+        const printWindow = window.open('', '_blank');
+        const printContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Audit Logs - ISAT e-TRACES</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        padding: 20px;
+                    }
+                    h1 {
+                        color: #1a5f3a;
+                        text-align: center;
+                        margin-bottom: 10px;
+                    }
+                    .subtitle {
+                        text-align: center;
+                        color: #666;
+                        margin-bottom: 20px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 20px;
+                    }
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #1a5f3a;
+                        color: white;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    .action-badge {
+                        display: inline-block;
+                        padding: 2px 8px;
+                        border-radius: 12px;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }
+                    .action-create { background-color: #d1fae5; color: #065f46; }
+                    .action-update { background-color: #fef3c7; color: #92400e; }
+                    .action-delete { background-color: #fee2e2; color: #991b1b; }
+                    .action-promote { background-color: #dbeafe; color: #1e40af; }
+                    .action-login { background-color: #e9d5ff; color: #6b21a8; }
+                    @media print {
+                        button { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>ISAT e-TRACES</h1>
+                <div class="subtitle">Audit Logs Report</div>
+                <div class="subtitle">Generated: ${new Date().toLocaleString()}</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${logs.data.map(log => `
+                            <tr>
+                                <td>${log.user?.name || 'Unknown'}</td>
+                                <td>${log.user?.email || 'Unknown'}</td>
+                                <td><span class="action-badge action-${log.action}">${log.action.charAt(0).toUpperCase() + log.action.slice(1)}</span></td>
+                                <td>${log.description}</td>
+                                <td>${new Date(log.created_at).toLocaleString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 250);
     };
 
     // Get action color
@@ -127,13 +253,23 @@ export default function AuditLogs({ logs, actions, filters }) {
                                         </h2>
                                         <p className="text-sm text-gray-600 mt-1">Track all user actions and system activities</p>
                                     </div>
-                                    <Button 
-                                        onClick={handleExport}
-                                        className="bg-green-600 hover:bg-green-700"
-                                    >
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Export CSV
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button 
+                                            onClick={handlePrint}
+                                            variant="outline"
+                                            className="border-green-600 text-green-600 hover:bg-green-50"
+                                        >
+                                            <Printer className="h-4 w-4 mr-2" />
+                                            Print
+                                        </Button>
+                                        <Button 
+                                            onClick={handleExportCSV}
+                                            className="bg-green-600 hover:bg-green-700"
+                                        >
+                                            <Download className="h-4 w-4 mr-2" />
+                                            Export CSV
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 {/* Filters */}

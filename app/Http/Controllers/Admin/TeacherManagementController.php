@@ -32,7 +32,22 @@ class TeacherManagementController extends Controller
             $query->where('current_position_id', $request->position);
         }
 
-        $teachers = $query->paginate(10);
+        $teachers = $query->paginate(10)->through(function ($teacher) {
+            // Decode division JSON to get position_range, career_stage, and department
+            $divisionData = json_decode($teacher->division, true);
+            if (is_array($divisionData)) {
+                $teacher->position_range = $divisionData['position_range'] ?? null;
+                $teacher->career_stage = $divisionData['career_stage'] ?? null;
+                $teacher->department = $divisionData['department'] ?? null;
+            } else {
+                // Fallback for old data
+                $teacher->position_range = null;
+                $teacher->career_stage = null;
+                $teacher->department = $teacher->division;
+            }
+            return $teacher;
+        });
+        
         $positions = Position::orderBy('order')->get();
 
         return Inertia::render('Admin/TeacherManagement', [
@@ -55,9 +70,10 @@ class TeacherManagementController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'current_position_id' => 'required|exists:positions,id',
-            'division' => 'nullable|string|max:255',
-            'teacher_type' => 'nullable|string|max:255',
+            'current_position_id' => 'required|string|in:T1 - T3,T4 - T7,MT1 - MT2,MT3 - MT5',
+            'department' => 'nullable|string|max:255',
+            'teacher_status' => 'nullable|string|max:255',
+            'career_stage' => 'nullable|string|max:255',
         ], [
             'name.required' => 'Teacher name is required.',
             'name.max' => 'Teacher name cannot exceed 255 characters.',
@@ -67,18 +83,29 @@ class TeacherManagementController extends Controller
             'password.required' => 'Password is required.',
             'password.min' => 'Password must be at least 8 characters long.',
             'current_position_id.required' => 'Please select a position for the teacher.',
-            'current_position_id.exists' => 'The selected position is invalid.',
-            'division.max' => 'Division name cannot exceed 255 characters.',
-            'teacher_type.max' => 'Teacher type cannot exceed 255 characters.',
+            'current_position_id.in' => 'The selected position is invalid.',
+            'department.max' => 'Department name cannot exceed 255 characters.',
+            'teacher_status.max' => 'Teacher status cannot exceed 255 characters.',
         ]);
+
+        // Capitalize first letter of name
+        $validated['name'] = ucwords(strtolower($validated['name']));
+
+        // Store position range and career stage in JSON format in division field
+        // and department in teacher_type field temporarily
+        $teacherData = [
+            'position_range' => $validated['current_position_id'],
+            'career_stage' => $validated['career_stage'] ?? null,
+            'department' => $validated['department'] ?? null,
+        ];
 
         $teacher = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
-            'current_position_id' => $validated['current_position_id'],
-            'division' => $validated['division'] ?? null,
-            'teacher_type' => $validated['teacher_type'] ?? null,
+            'current_position_id' => null,
+            'division' => json_encode($teacherData), // Store as JSON
+            'teacher_type' => $validated['teacher_status'] ?? null,
         ]);
 
         $teacher->assignRole('teacher');
@@ -97,20 +124,35 @@ class TeacherManagementController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $teacher->id,
-            'division' => 'nullable|string|max:255',
-            'teacher_type' => 'nullable|string|max:255',
+            'department' => 'nullable|string|max:255',
+            'teacher_status' => 'nullable|string|max:255',
         ], [
             'name.required' => 'Teacher name is required.',
             'name.max' => 'Teacher name cannot exceed 255 characters.',
             'email.required' => 'Email address is required.',
             'email.email' => 'Please provide a valid email address.',
             'email.unique' => 'This email address is already registered to another user.',
-            'division.max' => 'Division name cannot exceed 255 characters.',
-            'teacher_type.max' => 'Teacher type cannot exceed 255 characters.',
+            'department.max' => 'Department name cannot exceed 255 characters.',
+            'teacher_status.max' => 'Teacher status cannot exceed 255 characters.',
         ]);
 
+        // Capitalize first letter of name
+        $validated['name'] = ucwords(strtolower($validated['name']));
+
         $oldValues = $teacher->only(['name', 'email', 'division', 'teacher_type']);
-        $teacher->update($validated);
+        
+        // Get existing division data
+        $divisionData = json_decode($teacher->division, true) ?? [];
+        
+        // Update only department, keep position_range and career_stage
+        $divisionData['department'] = $validated['department'] ?? null;
+        
+        $teacher->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'division' => json_encode($divisionData),
+            'teacher_type' => $validated['teacher_status'] ?? null,
+        ]);
 
         // Log the action
         AuditLogService::logTeacherUpdated($teacher->id, $teacher->name, $oldValues, $validated);
@@ -142,50 +184,55 @@ class TeacherManagementController extends Controller
     public function promote(Request $request, User $teacher)
     {
         $validated = $request->validate([
-            'to_position_id' => 'required|exists:positions,id',
+            'to_position_id' => 'required|string|in:T1 - T3,T4 - T7,MT1 - MT2,MT3 - MT5',
+            'career_stage' => 'required|string',
             'notes' => 'nullable|string',
         ], [
             'to_position_id.required' => 'Please select a position to promote the teacher to.',
-            'to_position_id.exists' => 'The selected position is invalid.',
+            'to_position_id.in' => 'The selected position is invalid.',
+            'career_stage.required' => 'Career stage is required.',
         ]);
 
-        // Validate teacher has a position
-        if (!$teacher->current_position_id) {
-            return redirect()->back()->with('error', 'Teacher does not have a current position!');
-        }
+        // Get current division data
+        $currentDivisionData = json_decode($teacher->division, true) ?? [];
+        $currentPositionRange = $currentDivisionData['position_range'] ?? 'No Position';
+        $currentCareerStage = $currentDivisionData['career_stage'] ?? 'Unknown';
 
-        $currentPosition = $teacher->currentPosition;
-        $toPosition = Position::find($validated['to_position_id']);
-
-        // Check if trying to promote to same position
-        if ($currentPosition->id === $toPosition->id) {
-            return redirect()->back()->with('error', 'Teacher is already at this position!');
-        }
-
-        // Create promotion record
+        // Create promotion record with position ranges as strings
         Promotion::create([
             'user_id' => $teacher->id,
-            'from_position_id' => $currentPosition->id,
-            'to_position_id' => $toPosition->id,
+            'from_position_id' => null, // Not using position IDs anymore
+            'to_position_id' => null, // Not using position IDs anymore
+            'from_position_range' => $currentPositionRange,
+            'to_position_range' => $validated['to_position_id'],
+            'from_career_stage' => $currentCareerStage,
+            'to_career_stage' => $validated['career_stage'],
             'promoted_by' => auth()->id(),
             'promoted_at' => now(),
             'notes' => $validated['notes'] ?? null,
         ]);
 
+        // Update division data with new position and career stage
+        $newDivisionData = [
+            'position_range' => $validated['to_position_id'],
+            'career_stage' => $validated['career_stage'],
+            'department' => $currentDivisionData['department'] ?? null,
+        ];
+
         // Update teacher's position
         $teacher->update([
-            'current_position_id' => $toPosition->id,
+            'division' => json_encode($newDivisionData),
         ]);
 
         // Log the action
         AuditLogService::logTeacherPromoted(
             $teacher->id,
             $teacher->name,
-            $currentPosition->name,
-            $toPosition->name
+            $currentPositionRange,
+            $validated['to_position_id']
         );
 
-        return redirect()->back()->with('success', "Teacher promoted from {$currentPosition->name} to {$toPosition->name}!");
+        return redirect()->back()->with('success', "Teacher promoted from {$currentPositionRange} to {$validated['to_position_id']}!");
     }
 
     /**
