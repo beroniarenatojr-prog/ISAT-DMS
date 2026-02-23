@@ -166,7 +166,7 @@ export default function RateIpcrf({ teacher, kras, flash }) {
                         {/* Background Logo Watermark */}
                         <div className="fixed inset-0 pointer-events-none z-0 flex items-center justify-center opacity-20">
                             <img 
-                                src="/pictures/isat.jpg" 
+                                src="/pictures/isat.tmp" 
                                 alt="ISAT Background" 
                                 className="w-[600px] h-[600px] object-contain"
                             />

@@ -26,7 +26,7 @@ const data = {
   user: {
     name: "Admin User",
     email: "admin@gmail.com",
-    avatar: "/pictures/isat.jpg",
+    avatar: "/pictures/isat.tmp",
   },
   navMain: [
     {
@@ -71,7 +71,7 @@ export function AppSidebar({
               <a href={route('admin.dashboard')} className="flex items-center gap-2">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <img 
-                    src="/pictures/isat.jpg" 
+                    src="/pictures/isat.tmp" 
                     alt="ISAT" 
                     className="size-8 rounded-lg object-cover"
                   />

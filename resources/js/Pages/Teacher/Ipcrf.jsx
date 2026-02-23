@@ -88,7 +88,7 @@ export default function TeacherIpcrf({ kras, submissions, schoolYear, user }) {
                         <div className="flex justify-between items-center">
                             <div className="flex items-center gap-4">
                                 <img 
-                                    src="/pictures/isat.jpg" 
+                                    src="/pictures/isat.tmp" 
                                     alt="ISAT" 
                                     className="h-16 w-16 rounded-lg object-cover"
                                 />

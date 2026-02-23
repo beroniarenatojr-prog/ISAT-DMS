@@ -16,7 +16,7 @@ export default function TeacherDashboard({ user }) {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                         <div className="flex items-center gap-4">
                             <img 
-                                src="/pictures/isat.jpg" 
+                                src="/pictures/isat.tmp" 
                                 alt="ISAT" 
                                 className="h-12 w-12 rounded-lg object-cover"
                             />
