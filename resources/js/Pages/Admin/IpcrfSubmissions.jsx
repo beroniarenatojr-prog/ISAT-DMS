@@ -1,6 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import { Head, router, useForm } from '@inertiajs/react';
-import React, { useState, useEffect, useRef } from 'react';
+import { Head, router } from '@inertiajs/react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
 import {
   Breadcrumb,
@@ -41,9 +41,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Toaster } from "@/components/ui/sonner";
-import { Search, Plus, Eye, FileDown, ChevronDown, ChevronUp } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { Search, Plus, Eye, FileDown, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react';
+
+// Lazy load heavy PDF libraries only when needed
+const loadPDFLibraries = () => Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable')
+]);
 
 export default function IpcrfSubmissions({ teachers, availableYears, kras, filters, flash }) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
@@ -52,6 +56,26 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
     const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
     const [selectedRating, setSelectedRating] = useState(null);
     const [expandedRows, setExpandedRows] = useState([]);
+    const [openMenuRow, setOpenMenuRow] = useState(null);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const menuRef = useRef(null);
+
+    // Handle click outside to close menu
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setOpenMenuRow(null);
+            }
+        };
+
+        if (openMenuRow !== null) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [openMenuRow]);
 
     // Show flash messages
     useEffect(() => {
@@ -119,10 +143,19 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
         setIsViewDetailsModalOpen(true);
     };
 
-    // Generate IPCRF PDF for printing - Official DepEd Format
-    const generateIPCRFPDF = (teacher, rating) => {
+    // Generate IPCRF PDF for printing - Official DepEd Format matching the exact layout
+    const generateIPCRFPDF = async (teacher, rating) => {
+        if (isGeneratingPDF) return; // Prevent multiple clicks
+        
         try {
+            setIsGeneratingPDF(true);
             console.log('Starting PDF generation...', { teacher, rating });
+            
+            // Show loading toast
+            const loadingToast = toast.loading('Generating PDF...');
+            
+            // Lazy load PDF libraries
+            const [{ default: jsPDF }, { default: autoTable }] = await loadPDFLibraries();
             
             // Create PDF in landscape orientation for IPCRF form
             const doc = new jsPDF({
@@ -132,125 +165,292 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
             });
 
             const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            let currentY = 10;
             
             // Title Section
-            doc.setFontSize(14);
+            doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
-            doc.text('Individual Performance Commitment and Review Form (IPCRF)', pageWidth / 2, 15, { align: 'center' });
+            doc.text('INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW FORM (IPCRF) for Regular Teachers in the Highly Proficient Stage', pageWidth / 2, currentY, { align: 'center' });
             
-            // Teacher Information
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Name of Employee: ${teacher?.name || 'N/A'}`, 10, 25);
-            doc.text(`Position: ${teacher?.current_position?.name || 'Teacher I'}`, 10, 30);
-            doc.text(`Rating Period: ${rating?.rating_period || 'N/A'}`, 10, 35);
-            doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 60, 25);
+            currentY += 8;
             
-            // Prepare table data
-            const tableData = [];
+            // Employee Information Table
+            const employeeData = [
+                [
+                    { content: 'Name of Employee', styles: { fontStyle: 'bold', fillColor: [220, 220, 220] } },
+                    { content: teacher?.name || 'EDNA C. GARCIA', colSpan: 3, styles: { fillColor: [255, 255, 255] } },
+                    { content: 'Name of Rater', styles: { fontStyle: 'bold', fillColor: [220, 220, 220] } },
+                    { content: 'MARY ANN L. CATINDIG', colSpan: 2, styles: { fillColor: [255, 255, 255] } }
+                ],
+                [
+                    { content: 'Position', styles: { fontStyle: 'bold', fillColor: [220, 220, 220] } },
+                    { content: teacher?.current_position?.name || 'Master Teacher II', colSpan: 3, styles: { fillColor: [255, 255, 255] } },
+                    { content: 'Position', styles: { fontStyle: 'bold', fillColor: [220, 220, 220] } },
+                    { content: 'Principal IV', colSpan: 2, styles: { fillColor: [255, 255, 255] } }
+                ],
+                [
+                    { content: 'Bureau/Center/Service/Division', styles: { fontStyle: 'bold', fillColor: [220, 220, 220] } },
+                    { content: 'ISABELA SCHOOL OF ARTS AND TRADES - Ilagan City', colSpan: 3, styles: { fillColor: [255, 255, 255] } },
+                    { content: 'Date of Review', styles: { fontStyle: 'bold', fillColor: [220, 220, 220] } },
+                    { content: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }), colSpan: 2, styles: { fillColor: [255, 255, 255] } }
+                ],
+                [
+                    { content: 'Rating Period', styles: { fontStyle: 'bold', fillColor: [220, 220, 220] } },
+                    { content: rating?.rating_period || 'SY 2024-2025', colSpan: 6, styles: { fillColor: [255, 255, 255] } }
+                ]
+            ];
+
+            autoTable(doc, {
+                startY: currentY,
+                body: employeeData,
+                theme: 'grid',
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 2,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.3
+                },
+                columnStyles: {
+                    0: { cellWidth: 50 },
+                    1: { cellWidth: 60 },
+                    2: { cellWidth: 40 },
+                    3: { cellWidth: 40 },
+                    4: { cellWidth: 40 },
+                    5: { cellWidth: 50 },
+                    6: { cellWidth: 50 }
+                }
+            });
+
+            currentY = doc.lastAutoTable.finalY + 3;
+
+            // Section Headers
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'bold');
             
+            // TO BE FILLED OUT sections
+            const sectionY = currentY;
+            doc.text('TO BE FILLED OUT DURING PLANNING', 80, sectionY);
+            doc.text('TO BE FILLED OUT DURING EVALUATION', 250, sectionY);
+            
+            currentY += 5;
+
+            // Main IPCRF Table with exact column structure from screenshot
+            const headers = [
+                [
+                    { content: 'MFOs', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [220, 220, 220] } },
+                    { content: 'Domains', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [220, 220, 220] } },
+                    { content: 'Objectives', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [220, 220, 220] } },
+                    { content: 'Timeline', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [220, 220, 220] } },
+                    { content: 'Weight\nper KRA', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [220, 220, 220] } },
+                    { content: 'QET', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [220, 220, 220] } },
+                    { content: 'Performance Indicators', colSpan: 5, styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'Actual Results', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [220, 220, 220] } },
+                    { content: 'Rating', colSpan: 4, styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'Score', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [220, 220, 220] } }
+                ],
+                [
+                    { content: 'Outstanding\n5', styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'Very Satisfactory\n4', styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'Satisfactory\n3', styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'Unsatisfactory\n2', styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'Poor\n1', styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'Q', styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'E', styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'T', styles: { halign: 'center', fillColor: [220, 220, 220] } },
+                    { content: 'Ave', styles: { halign: 'center', fillColor: [220, 220, 220] } }
+                ]
+            ];
+
+            // Build data rows from KRA details
+            const dataRows = [];
+            const mfoMap = {
+                'Basic Education Services': 'Basic\nEducation\nServices',
+                'Professional Development': 'Professional\nDevelopment'
+            };
+
             if (rating?.kra_details && Array.isArray(rating.kra_details)) {
-                rating.kra_details.forEach((kra) => {
+                rating.kra_details.forEach((kra, kraIndex) => {
                     if (kra?.objectives && Array.isArray(kra.objectives)) {
-                        kra.objectives.forEach((obj) => {
+                        kra.objectives.forEach((obj, objIndex) => {
                             const objRating = Number(obj.rating) || 5;
                             const objScore = Number(obj.score) || 0;
+                            const weight = '7.14%';
+                            const timeline = 'SY 2024-2025';
                             
-                            tableData.push([
-                                kra.kra_name || '',
-                                obj.objective_code || '',
-                                obj.objective_description || '',
-                                '10%',
-                                objRating,
-                                objRating,
-                                objRating,
-                                objRating.toFixed(2),
-                                objScore.toFixed(3)
+                            // Get adjectival rating
+                            let adjectivalRating = '';
+                            if (objRating >= 4.5) adjectivalRating = 'Outstanding';
+                            else if (objRating >= 3.5) adjectivalRating = 'Very Satisfactory';
+                            else if (objRating >= 2.5) adjectivalRating = 'Satisfactory';
+                            else if (objRating >= 1.5) adjectivalRating = 'Unsatisfactory';
+                            else adjectivalRating = 'Poor';
+                            
+                            dataRows.push([
+                                objIndex === 0 ? (mfoMap[kra.kra_name] || kra.kra_name) : '',
+                                objIndex === 0 ? kra.kra_name : '',
+                                obj.objective_description || obj.objective_code || '',
+                                timeline,
+                                weight,
+                                'Quality',
+                                '', // Outstanding indicator
+                                '', // Very Satisfactory indicator
+                                '', // Satisfactory indicator
+                                '', // Unsatisfactory indicator
+                                '', // Poor indicator
+                                '', // Actual Results
+                                objRating.toFixed(0), // Q
+                                objRating.toFixed(0), // E
+                                objRating.toFixed(0), // T
+                                objRating.toFixed(3), // Ave
+                                objScore.toFixed(3) // Score
                             ]);
                         });
                     }
                 });
             }
-            
-            console.log('Table data prepared:', tableData.length, 'rows');
-            
-            // Create table using autoTable
+
             autoTable(doc, {
-                startY: 45,
-                head: [[
-                    'KRA',
-                    'Code',
-                    'Objectives',
-                    'Weight',
-                    'Q',
-                    'E',
-                    'T',
-                    'Avg',
-                    'Score'
-                ]],
-                body: tableData,
+                startY: currentY,
+                head: headers,
+                body: dataRows,
                 theme: 'grid',
                 styles: {
-                    fontSize: 7,
-                    cellPadding: 2,
+                    fontSize: 6,
+                    cellPadding: 1.5,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    valign: 'middle'
                 },
                 headStyles: {
-                    fillColor: [255, 192, 203],
+                    fillColor: [220, 220, 220],
                     textColor: [0, 0, 0],
                     fontStyle: 'bold',
                     halign: 'center'
                 },
                 columnStyles: {
-                    0: { cellWidth: 40 },
-                    1: { cellWidth: 20, halign: 'center' },
-                    2: { cellWidth: 100 },
-                    3: { cellWidth: 20, halign: 'center' },
-                    4: { cellWidth: 15, halign: 'center' },
-                    5: { cellWidth: 15, halign: 'center' },
-                    6: { cellWidth: 15, halign: 'center' },
-                    7: { cellWidth: 20, halign: 'center' },
-                    8: { cellWidth: 25, halign: 'center' }
+                    0: { cellWidth: 15, halign: 'center' },  // MFOs
+                    1: { cellWidth: 20, halign: 'center' },  // Domains
+                    2: { cellWidth: 45 },                     // Objectives
+                    3: { cellWidth: 18, halign: 'center' },  // Timeline
+                    4: { cellWidth: 12, halign: 'center' },  // Weight
+                    5: { cellWidth: 12, halign: 'center' },  // QET
+                    6: { cellWidth: 20 },                     // Outstanding
+                    7: { cellWidth: 20 },                     // Very Satisfactory
+                    8: { cellWidth: 20 },                     // Satisfactory
+                    9: { cellWidth: 20 },                     // Unsatisfactory
+                    10: { cellWidth: 20 },                    // Poor
+                    11: { cellWidth: 25 },                    // Actual Results
+                    12: { cellWidth: 8, halign: 'center' },  // Q
+                    13: { cellWidth: 8, halign: 'center' },  // E
+                    14: { cellWidth: 8, halign: 'center' },  // T
+                    15: { cellWidth: 12, halign: 'center' }, // Ave
+                    16: { cellWidth: 15, halign: 'center' }  // Score
                 }
             });
-            
-            // Summary section
-            const finalY = doc.lastAutoTable.finalY + 10;
+
+            currentY = doc.lastAutoTable.finalY + 3;
+
+            // Rating for Overall Accomplishments
             const totalScore = Number(rating?.total_score) || 0;
             const numericalRating = Number(rating?.numerical_rating) || 0;
-            
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`Total Score: ${totalScore.toFixed(3)}`, 10, finalY);
-            doc.text(`Numerical Rating: ${numericalRating.toFixed(2)}`, 10, finalY + 7);
-            
-            // Rating interpretation
-            let interpretation = '';
-            if (numericalRating >= 4.5) interpretation = 'Outstanding';
-            else if (numericalRating >= 3.5) interpretation = 'Very Satisfactory';
-            else if (numericalRating >= 2.5) interpretation = 'Satisfactory';
-            else if (numericalRating >= 1.5) interpretation = 'Unsatisfactory';
-            else interpretation = 'Poor';
-            
-            doc.text(`Performance Rating: ${interpretation}`, 10, finalY + 14);
-            
-            // Remarks
-            if (rating?.remarks) {
-                doc.setFontSize(9);
-                doc.setFont('helvetica', 'normal');
-                doc.text('Remarks:', 10, finalY + 22);
-                doc.text(rating.remarks, 10, finalY + 27, { maxWidth: pageWidth - 20 });
-            }
-            
-            // Signature section
-            const sigY = finalY + 40;
-            doc.setFontSize(10);
-            doc.text('_________________________', 10, sigY);
-            doc.text('Rater Signature', 10, sigY + 5);
-            doc.text('Date: ______________', 10, sigY + 10);
-            
-            doc.text('_________________________', pageWidth / 2, sigY);
-            doc.text('Approving Authority Signature', pageWidth / 2, sigY + 5);
-            doc.text('Date: ______________', pageWidth / 2, sigY + 10);
+            let adjectivalRating = '';
+            if (numericalRating >= 4.5) adjectivalRating = 'Outstanding';
+            else if (numericalRating >= 3.5) adjectivalRating = 'Very Satisfactory';
+            else if (numericalRating >= 2.5) adjectivalRating = 'Satisfactory';
+            else if (numericalRating >= 1.5) adjectivalRating = 'Unsatisfactory';
+            else adjectivalRating = 'Poor';
+
+            const summaryData = [
+                [
+                    { content: 'RATING FOR OVERALL ACCOMPLISHMENTS', styles: { fontStyle: 'bold', fillColor: [220, 220, 220] } },
+                    { content: adjectivalRating, styles: { fontStyle: 'bold', halign: 'center' } },
+                    { content: numericalRating.toFixed(3), styles: { fontStyle: 'bold', halign: 'center' } }
+                ]
+            ];
+
+            autoTable(doc, {
+                startY: currentY,
+                body: summaryData,
+                theme: 'grid',
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 3,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.3
+                },
+                columnStyles: {
+                    0: { cellWidth: 200 },
+                    1: { cellWidth: 50 },
+                    2: { cellWidth: 30 }
+                }
+            });
+
+            currentY = doc.lastAutoTable.finalY + 3;
+
+            // Adjectival Rating Equivalences Table
+            const ratingEquivalences = [
+                [
+                    { content: 'ADJECTIVAL RATING EQUIVALENCES', colSpan: 2, styles: { fontStyle: 'bold', halign: 'center', fillColor: [220, 220, 220] } }
+                ],
+                [
+                    { content: 'RANGE', styles: { fontStyle: 'bold', halign: 'center', fillColor: [240, 240, 240] } },
+                    { content: 'ADJECTIVAL RATING', styles: { fontStyle: 'bold', halign: 'center', fillColor: [240, 240, 240] } }
+                ],
+                ['4.500 – 5.000', 'Outstanding'],
+                ['3.500 – 4.499', 'Very Satisfactory'],
+                ['2.500 – 3.499', 'Satisfactory'],
+                ['1.500 – 2.499', 'Unsatisfactory'],
+                ['below 1.499', 'Poor']
+            ];
+
+            autoTable(doc, {
+                startY: currentY,
+                body: ratingEquivalences,
+                theme: 'grid',
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 2,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.3,
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { cellWidth: 40 },
+                    1: { cellWidth: 50 }
+                }
+            });
+
+            currentY = doc.lastAutoTable.finalY + 10;
+
+            // Signature Section
+            const signatureData = [
+                [
+                    { content: teacher?.name || 'EDNA C. GARCIA', styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: 'MARY ANN L. CATINDIG', styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: 'EDUARDO C. ESCORPISO JR. EDD. CESO V', styles: { halign: 'center', fontStyle: 'bold' } }
+                ],
+                [
+                    { content: 'Ratee', styles: { halign: 'center', fontStyle: 'italic' } },
+                    { content: 'Rater', styles: { halign: 'center', fontStyle: 'italic' } },
+                    { content: 'Approving Authority', styles: { halign: 'center', fontStyle: 'italic' } }
+                ]
+            ];
+
+            autoTable(doc, {
+                startY: currentY,
+                body: signatureData,
+                theme: 'plain',
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 3
+                },
+                columnStyles: {
+                    0: { cellWidth: 90 },
+                    1: { cellWidth: 90 },
+                    2: { cellWidth: 90 }
+                }
+            });
             
             console.log('PDF generation complete, saving...');
             
@@ -258,19 +458,31 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
             const filename = `IPCRF_${teacher?.name?.replace(/\s+/g, '_') || 'Teacher'}_${rating?.rating_period || 'Unknown'}.pdf`;
             doc.save(filename);
             
+            // Dismiss loading and show success
+            toast.dismiss();
             toast.success('IPCRF PDF generated successfully!');
         } catch (error) {
             console.error('Error generating PDF:', error);
+            toast.dismiss();
             toast.error(`Failed to generate PDF: ${error.message}`);
+        } finally {
+            setIsGeneratingPDF(false);
         }
     };
 
     // Export rating to PDF in official IPCRF format
-    const exportRatingToPDF = () => {
-        if (!selectedRating) return;
+    const exportRatingToPDF = async () => {
+        if (!selectedRating || isGeneratingPDF) return;
 
         try {
+            setIsGeneratingPDF(true);
             console.log('Exporting rating to PDF:', selectedRating);
+            
+            // Show loading toast
+            const loadingToast = toast.loading('Exporting PDF...');
+            
+            // Lazy load PDF libraries
+            const [{ default: jsPDF }, { default: autoTable }] = await loadPDFLibraries();
             
             // Create PDF in landscape orientation
             const doc = new jsPDF({
@@ -547,10 +759,15 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
             console.log('Saving PDF as:', fileName);
             doc.save(fileName);
             
+            // Dismiss loading and show success
+            toast.dismiss();
             toast.success('PDF exported successfully!');
         } catch (error) {
             console.error('Error exporting PDF:', error);
+            toast.dismiss();
             toast.error('Failed to export PDF: ' + error.message);
+        } finally {
+            setIsGeneratingPDF(false);
         }
     };
 
@@ -582,6 +799,7 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
                                 src="/pictures/isat.tmp" 
                                 alt="ISAT Background" 
                                 className="w-[600px] h-[600px] object-contain"
+                                loading="lazy"
                             />
                         </div>
 
@@ -744,34 +962,60 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell className="text-right">
-                                                                    <div className="flex gap-2 justify-end">
+                                                                    <div className="relative inline-block" ref={openMenuRow === teacher.id ? menuRef : null}>
                                                                         <Button
                                                                             size="sm"
-                                                                            className="bg-green-600 hover:bg-green-700"
-                                                                            onClick={() => router.visit(route('admin.ipcrf.rate', teacher.id))}
+                                                                            variant="ghost"
+                                                                            className="h-8 w-8 p-0"
+                                                                            onClick={() => setOpenMenuRow(openMenuRow === teacher.id ? null : teacher.id)}
                                                                         >
-                                                                            <Plus className="h-3 w-3 mr-1" />
-                                                                            Rate
+                                                                            <MoreVertical className="h-4 w-4" />
                                                                         </Button>
-                                                                        {latestRating && (
-                                                                            <>
+                                                                        
+                                                                        {/* Dropdown menu that appears on click */}
+                                                                        {openMenuRow === teacher.id && (
+                                                                            <div className="absolute right-0 top-0 flex flex-row gap-1 bg-white border rounded-md shadow-lg p-1 z-10">
                                                                                 <Button
                                                                                     size="sm"
-                                                                                    variant="outline"
-                                                                                    onClick={() => viewRatingDetails(latestRating)}
+                                                                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                                                                    onClick={() => {
+                                                                                        router.visit(route('admin.ipcrf.rate', teacher.id));
+                                                                                        setOpenMenuRow(null);
+                                                                                    }}
+                                                                                    title="Rate"
                                                                                 >
-                                                                                    <Eye className="h-3 w-3 mr-1" />
-                                                                                    View
+                                                                                    <Plus className="h-3 w-3 mr-1" />
+                                                                                    Rate
                                                                                 </Button>
-                                                                                <Button
-                                                                                    size="sm"
-                                                                                    className="bg-blue-600 hover:bg-blue-700"
-                                                                                    onClick={() => generateIPCRFPDF(teacher, latestRating)}
-                                                                                >
-                                                                                    <FileDown className="h-3 w-3 mr-1" />
-                                                                                    Print
-                                                                                </Button>
-                                                                            </>
+                                                                                {latestRating && (
+                                                                                    <>
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            variant="outline"
+                                                                                            onClick={() => {
+                                                                                                viewRatingDetails(latestRating);
+                                                                                                setOpenMenuRow(null);
+                                                                                            }}
+                                                                                            title="View"
+                                                                                        >
+                                                                                            <Eye className="h-3 w-3 mr-1" />
+                                                                                            View
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                                                            onClick={() => {
+                                                                                                generateIPCRFPDF(teacher, latestRating);
+                                                                                                setOpenMenuRow(null);
+                                                                                            }}
+                                                                                            title="Print"
+                                                                                        >
+                                                                                            <FileDown className="h-3 w-3 mr-1" />
+                                                                                            Print
+                                                                                        </Button>
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
                                                                         )}
                                                                     </div>
                                                                 </TableCell>

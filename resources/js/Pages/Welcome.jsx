@@ -176,7 +176,7 @@ export default function Welcome({ auth }) {
                             <div className="flex items-center gap-3 group cursor-pointer">
                                 <div className="relative">
                                     <img 
-                                        src="/pictures/isat.jpg" 
+                                        src="/pictures/isat 1.jpg" 
                                         alt="ISAT Logo" 
                                         className="h-10 w-10 rounded-lg object-cover transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
                                     />
@@ -299,7 +299,7 @@ export default function Welcome({ auth }) {
                                     <div className="relative bg-gradient-to-br from-green-100 to-blue-100 rounded-3xl p-8 shadow-2xl transform hover:scale-105 transition-all duration-500 hover:rotate-1 backdrop-blur-sm">
                                         <div className="relative overflow-hidden rounded-2xl">
                                             <img 
-                                                src="/pictures/isat.jpg" 
+                                                src="/pictures/isat 1.jpg" 
                                                 alt="ISAT" 
                                                 className="w-full h-auto shadow-lg transition-transform duration-700 hover:scale-110"
                                                 loading="eager"
@@ -517,7 +517,7 @@ export default function Welcome({ auth }) {
                             <div>
                                 <div className="flex items-center gap-3 mb-4">
                                     <img 
-                                        src="/pictures/isat.jpg" 
+                                        src="/pictures/isat 1.jpg" 
                                         alt="ISAT Logo" 
                                         className="h-10 w-10 rounded-lg object-cover"
                                     />
@@ -594,7 +594,7 @@ export default function Welcome({ auth }) {
                                     <div className="flex items-center gap-3">
                                         <div className="relative group">
                                             <img 
-                                                src="/pictures/isat.jpg" 
+                                                src="/pictures/isat 1.jpg" 
                                                 alt="ISAT Logo" 
                                                 className="h-12 w-12 rounded-lg object-cover transition-transform duration-300 group-hover:scale-110"
                                             />
@@ -777,7 +777,7 @@ export default function Welcome({ auth }) {
                 </div>
             )}
 
-            <style jsx>{`
+            <style>{`
                 /* Performance-optimized animations using GPU acceleration */
                 @keyframes blob {
                     0% { 
