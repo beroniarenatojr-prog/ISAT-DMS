@@ -20,11 +20,12 @@ class IpcrfController extends Controller
 
         $currentYear = '2024-2025';
         
-        // Get teacher's submissions
+        // Get teacher's submissions - grouped by objective
         $submissions = TeacherSubmission::where('teacher_id', auth()->id())
             ->where('school_year', $currentYear)
+            ->orderBy('created_at', 'desc')
             ->get()
-            ->keyBy(function ($item) {
+            ->groupBy(function ($item) {
                 if ($item->competency_id === null) {
                     return $item->objective_id . '_obj';
                 }
@@ -35,6 +36,7 @@ class IpcrfController extends Controller
             'kras' => $kras,
             'submissions' => $submissions,
             'schoolYear' => $currentYear,
+            'user' => auth()->user(),
         ]);
     }
 
@@ -51,19 +53,16 @@ class IpcrfController extends Controller
         $file = $request->file('file');
         $path = $file->store('ipcrf-submissions/' . auth()->id(), 'public');
 
-        $submission = TeacherSubmission::updateOrCreate(
-            [
-                'teacher_id' => auth()->id(),
-                'objective_id' => $request->objective_id,
-                'competency_id' => $request->competency_id,
-                'school_year' => $request->school_year,
-            ],
-            [
-                'file_path' => $path,
-                'notes' => $request->notes,
-                'status' => 'submitted',
-            ]
-        );
+        // Create new submission (allow multiple per objective)
+        $submission = TeacherSubmission::create([
+            'teacher_id' => auth()->id(),
+            'objective_id' => $request->objective_id,
+            'competency_id' => $request->competency_id,
+            'school_year' => $request->school_year,
+            'file_path' => $path,
+            'notes' => $request->notes,
+            'status' => 'submitted',
+        ]);
 
         return back()->with('success', 'File uploaded successfully!');
     }
