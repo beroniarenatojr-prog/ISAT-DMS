@@ -265,8 +265,19 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
             // Build data rows from KRA details
             const dataRows = [];
             const mfoMap = {
-                'Basic Education Services': 'Basic\nEducation\nServices',
-                'Professional Development': 'Professional\nDevelopment'
+                'Content Knowledge and Pedagogy': 'Basic\nEducation\nServices',
+                'Learning Environment & Diversity of Learners': 'Basic\nEducation\nServices',
+                'Curriculum and Planning & Assessment and Reporting': 'Basic\nEducation\nServices',
+                'Community Linkages and Professional Engagement': 'Professional\nDevelopment',
+                'Personal Growth and Professional Development': 'Professional\nDevelopment'
+            };
+
+            const domainMap = {
+                'Content Knowledge and Pedagogy': '1. Content\nKnowledge and\nPedagogy',
+                'Learning Environment & Diversity of Learners': '2. Learning\nEnvironment &\nDiversity of\nLearners',
+                'Curriculum and Planning & Assessment and Reporting': '3. Curriculum and\nPlanning &\nAssessment and\nReporting',
+                'Community Linkages and Professional Engagement': '4. Community\nLinkages and\nProfessional\nEngagement',
+                'Personal Growth and Professional Development': '5. Personal\nGrowth and\nProfessional\nDevelopment'
             };
 
             if (rating?.kra_details && Array.isArray(rating.kra_details)) {
@@ -275,30 +286,43 @@ export default function IpcrfSubmissions({ teachers, availableYears, kras, filte
                         kra.objectives.forEach((obj, objIndex) => {
                             const objRating = Number(obj.rating) || 5;
                             const objScore = Number(obj.score) || 0;
-                            const weight = '7.14%';
-                            const timeline = 'SY 2024-2025';
+                            const weight = obj.weight ? `${obj.weight}%` : '7.14%';
+                            const timeline = rating?.rating_period || 'SY 2024-2025';
                             
-                            // Get adjectival rating
-                            let adjectivalRating = '';
-                            if (objRating >= 4.5) adjectivalRating = 'Outstanding';
-                            else if (objRating >= 3.5) adjectivalRating = 'Very Satisfactory';
-                            else if (objRating >= 2.5) adjectivalRating = 'Satisfactory';
-                            else if (objRating >= 1.5) adjectivalRating = 'Unsatisfactory';
-                            else adjectivalRating = 'Poor';
+                            // Performance indicators - use data from database or defaults
+                            // These should come from the admin's uploaded content
+                            const outstandingText = obj.outstanding_indicator || 
+                                'Identified and utilized personal professional strengths to uphold the dignity of teaching as a profession to help build a positive teaching and learning culture within the school';
+                            
+                            const verySatisfactoryText = obj.very_satisfactory_indicator || 
+                                'Identified and utilized personal professional strengths to uphold the dignity of teaching as a profession to help build a positive teaching and learning culture within the school';
+                            
+                            const satisfactoryText = obj.satisfactory_indicator || 
+                                'Identified and utilized personal professional strengths to uphold the dignity of teaching as a profession to help build a positive teaching and learning culture within the school';
+                            
+                            const unsatisfactoryText = obj.unsatisfactory_indicator || 
+                                'Identified personal professional strengths that uphold the dignity of teaching as a profession as evidenced in PD/LAC sessions/FGDs/other collegial discussions that are responsive to learners with disabilities, giftedness and talents during meetings/LAC sessions/FGDs/other collegial discussions';
+                            
+                            const poorText = obj.poor_indicator || 
+                                'No acceptable evidence was shown';
+                            
+                            // Actual results - should come from the rating data
+                            const actualResults = obj.actual_results || 
+                                'Demonstrated Level 5 in the objective as shown in COT rating sheets / inter-observer agreement forms';
                             
                             dataRows.push([
-                                objIndex === 0 ? (mfoMap[kra.kra_name] || kra.kra_name) : '',
-                                objIndex === 0 ? kra.kra_name : '',
+                                objIndex === 0 ? (mfoMap[kra.kra_name] || 'Basic\nEducation\nServices') : '',
+                                objIndex === 0 ? (domainMap[kra.kra_name] || kra.kra_name) : '',
                                 obj.objective_description || obj.objective_code || '',
                                 timeline,
                                 weight,
                                 'Quality',
-                                '', // Outstanding indicator
-                                '', // Very Satisfactory indicator
-                                '', // Satisfactory indicator
-                                '', // Unsatisfactory indicator
-                                '', // Poor indicator
-                                '', // Actual Results
+                                outstandingText,
+                                verySatisfactoryText,
+                                satisfactoryText,
+                                unsatisfactoryText,
+                                poorText,
+                                actualResults,
                                 objRating.toFixed(0), // Q
                                 objRating.toFixed(0), // E
                                 objRating.toFixed(0), // T
