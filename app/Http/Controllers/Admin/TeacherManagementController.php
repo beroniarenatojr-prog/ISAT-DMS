@@ -13,6 +13,10 @@ use Inertia\Response;
 
 class TeacherManagementController extends Controller
 {
+    // Password every seeded teacher account starts with, shown in the CSV export
+    // so admins can hand out first-time logins.
+    private const DEFAULT_PASSWORD = 'password';
+
     /**
      * Display all teachers
      */
@@ -109,9 +113,7 @@ class TeacherManagementController extends Controller
                 'Type',
                 'School Campus',
                 'Level',
-                'Date Hired',
-                'Years of Service',
-                'Contact Number',
+                'Default Password',
                 'Status',
             ]);
 
@@ -129,9 +131,7 @@ class TeacherManagementController extends Controller
                     $teacher->teacher_status ?? $teacher->teacher_type ?? 'N/A',
                     $teacher->school_campus ?: 'N/A',
                     $divisionData['level'] ?? $teacher->level ?? 'N/A',
-                    $teacher->date_hired ? $teacher->date_hired->format('Y-m-d') : 'N/A',
-                    $teacher->years_of_service ?? 'N/A',
-                    $teacher->contact_number ?: 'N/A',
+                    self::DEFAULT_PASSWORD,
                     $teacher->is_active ? 'Active' : 'Inactive',
                 ]);
             }
