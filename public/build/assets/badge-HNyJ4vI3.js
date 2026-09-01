@@ -1,0 +1,1 @@
+import{j as r}from"./app-C9oUWCsd.js";import{c as s}from"./button-BhtdDOiE.js";function t({className:o,...n}){return r.jsx("div",{className:s("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",o),...n})}export{t as B};

@@ -18,21 +18,7 @@ class TeacherManagementController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = User::role('teacher')
-            ->with('currentPosition')
-            ->orderBy('name');
-
-        // Search by name
-        if ($request->has('search') && $request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
-
-        // Filter by position
-        if ($request->has('position') && $request->position) {
-            $query->where('division', 'like', '%"career_stage":"' . $request->position . '"%');
-        }
-
-        $teachers = $query->paginate(10)->through(function ($teacher) {
+        $teachers = $this->filteredTeachersQuery($request)->paginate(10)->through(function ($teacher) {
             // Decode division JSON to get position_range, career_stage, and department
             $divisionData = json_decode($teacher->division, true);
             if (is_array($divisionData)) {
@@ -67,6 +53,103 @@ class TeacherManagementController extends Controller
                 'error' => session('error'),
             ],
         ]);
+    }
+
+    /**
+     * Base teacher query with the index page's search / career stage filters applied.
+     * Shared by the list view and the CSV export so both stay in sync.
+     */
+    private function filteredTeachersQuery(Request $request)
+    {
+        $query = User::role('teacher')
+            ->with('currentPosition')
+            ->orderBy('name');
+
+        // Search by name
+        if ($request->has('search') && $request->search) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by position
+        if ($request->has('position') && $request->position) {
+            $query->where('division', 'like', '%"career_stage":"' . $request->position . '"%');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Export the teacher list to CSV.
+     * Exports every teacher matching the current filters, not just the visible page.
+     */
+    public function export(Request $request)
+    {
+        $teachers = $this->filteredTeachersQuery($request)->get();
+
+        $filename = 'teachers_' . date('Y-m-d_His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($teachers) {
+            $file = fopen('php://output', 'w');
+
+            // UTF-8 BOM so Excel renders accented characters correctly
+            fwrite($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($file, [
+                'Name',
+                'Email',
+                'Employee ID',
+                'Position',
+                'Career Stage',
+                'Department',
+                'Type',
+                'School Campus',
+                'Level',
+                'Date Hired',
+                'Years of Service',
+                'Contact Number',
+                'Status',
+            ]);
+
+            foreach ($teachers as $teacher) {
+                $divisionData = json_decode($teacher->division, true);
+                $divisionData = is_array($divisionData) ? $divisionData : [];
+
+                fputcsv($file, [
+                    $teacher->name,
+                    $teacher->email,
+                    $teacher->employee_id ?: 'N/A',
+                    $divisionData['position_range'] ?? $teacher->currentPosition->name ?? 'No Position',
+                    $divisionData['career_stage'] ?? $teacher->career_stage ?? 'N/A',
+                    $divisionData['department'] ?? $teacher->department ?? 'N/A',
+                    $teacher->teacher_status ?? $teacher->teacher_type ?? 'N/A',
+                    $teacher->school_campus ?: 'N/A',
+                    $divisionData['level'] ?? $teacher->level ?? 'N/A',
+                    $teacher->date_hired ? $teacher->date_hired->format('Y-m-d') : 'N/A',
+                    $teacher->years_of_service ?? 'N/A',
+                    $teacher->contact_number ?: 'N/A',
+                    $teacher->is_active ? 'Active' : 'Inactive',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        // Log the action
+        AuditLogService::log(
+            'teachers_exported',
+            'Exported ' . $teachers->count() . ' teacher record(s) to CSV',
+            'User',
+            null,
+            null,
+            $request->only(['search', 'position'])
+        );
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

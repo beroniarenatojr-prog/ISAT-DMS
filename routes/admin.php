@@ -65,6 +65,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
     // Teacher Management
     Route::get('/teachers', [TeacherManagementController::class, 'index'])->name('teachers.index');
+    Route::get('/teachers/export', [TeacherManagementController::class, 'export'])->name('teachers.export');
     Route::post('/teachers', [TeacherManagementController::class, 'store'])->name('teachers.store');
     Route::put('/teachers/{teacher}', [TeacherManagementController::class, 'update'])->name('teachers.update');
     Route::delete('/teachers/{teacher}', [TeacherManagementController::class, 'destroy'])->name('teachers.destroy');

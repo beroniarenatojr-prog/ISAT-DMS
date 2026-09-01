@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Search, Plus, Edit, Trash2, TrendingUp, History, MoreVertical, Calendar, Award, CheckCircle2, User, Briefcase, Mail, Phone, MapPin, Building, IdCard } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, TrendingUp, History, MoreVertical, Calendar, Award, CheckCircle2, User, Briefcase, Mail, Phone, MapPin, Building, IdCard, Download } from 'lucide-react';
 
 export default function TeacherManagement({ teachers, positions, careerStages, filters, flash }) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
@@ -106,6 +106,21 @@ export default function TeacherManagement({ teachers, positions, careerStages, f
             position: selectedPosition,
         }, {
             preserveState: true,
+        });
+    };
+
+    // Handle export teacher list to CSV.
+    // Exports everything matching the current filters, not just the page on screen.
+    const handleExportList = () => {
+        if (teachers.total === 0) {
+            toast.error('There are no teachers to export.');
+            return;
+        }
+
+        toast.success('Preparing your teacher list...');
+        window.location.href = route('admin.teachers.export', {
+            search: searchTerm,
+            position: selectedPosition,
         });
     };
 
@@ -323,6 +338,15 @@ export default function TeacherManagement({ teachers, positions, careerStages, f
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            <Button
+                                onClick={handleExportList}
+                                variant="outline"
+                                className="border-green-600 text-green-600 hover:bg-green-50"
+                            >
+                                <Download className="h-4 w-4 mr-2" />
+                                Export List
+                            </Button>
 
                             <Button onClick={() => setIsCreateModalOpen(true)} className="bg-green-600 hover:bg-green-700">
                                 <Plus className="h-4 w-4 mr-2" />
